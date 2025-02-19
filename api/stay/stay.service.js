@@ -19,23 +19,44 @@ export const stayService = {
 // ✅ FETCH STAYS WITH FILTERING & PAGINATION
 async function query(filterBy = {}) {
     try {
-        const criteria = _buildCriteria(filterBy)
-        const sort = _buildSort(filterBy)
-
         const collection = await dbService.getCollection('stay')
-        let stayCursor = collection.find(criteria).sort(sort)
+        
+        // ✅ Build the filter criteria
+        const criteria = {}
 
-        if (filterBy.pageIdx !== undefined) {
-            stayCursor = stayCursor.skip(filterBy.pageIdx * PAGE_SIZE).limit(PAGE_SIZE)
+        // ✅ Filter by destination
+        if (filterBy.destination && filterBy.destination !== '') {
+            const regex = new RegExp(filterBy.destination, 'i')
+            criteria['loc.city'] = regex
         }
 
-        const stays = await stayCursor.toArray()
+        // ✅ Filter by guests (Only if guests > 0)
+        if (filterBy.guests && filterBy.guests > 0) {
+            criteria.capacity = { $gte: filterBy.guests }
+        }
+
+        // ✅ Filter by price range
+        const minPrice = parseInt(filterBy.minPrice) || 0
+        const maxPrice = filterBy.maxPrice === 'Infinity' ? Number.MAX_SAFE_INTEGER : parseInt(filterBy.maxPrice)
+        criteria.price = { $gte: minPrice, $lte: maxPrice }
+
+        // ✅ Filter by search text (applies to stay name and description)
+        if (filterBy.txt && filterBy.txt.trim() !== '') {
+            const regex = new RegExp(filterBy.txt, 'i')
+            criteria.$or = [{ name: regex }, { summary: regex }]
+        }
+
+        console.log("🔍 Querying stays with criteria:", criteria)
+
+        // ✅ Fetch stays from MongoDB
+        const stays = await collection.find(criteria).toArray()
         return stays
     } catch (err) {
-        logger.error('❌ Cannot fetch stays:', err)
+        logger.error('❌ Failed to fetch stays', err)
         throw err
     }
 }
+
 
 // ✅ GET A SINGLE STAY BY ID
 async function getById(stayId) {

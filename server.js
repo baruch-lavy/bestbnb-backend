@@ -8,6 +8,7 @@ import { authRoutes } from './api/auth/auth.routes.js'
 import { userRoutes } from './api/user/user.routes.js'
 import { reviewRoutes } from './api/review/review.routes.js'
 import { stayRoutes } from './api/stay/stay.routes.js' // ✅ Stay Routes
+import { orderRoutes } from './api/order/order.routes.js' // ✅ Import Orders API
 import { setupSocketAPI } from './services/socket.service.js'
 
 import { setupAsyncLocalStorage } from './middlewares/setupAls.middleware.js'
@@ -40,6 +41,7 @@ app.use('/api/auth', authRoutes)
 app.use('/api/user', userRoutes)
 app.use('/api/review', reviewRoutes)
 app.use('/api/stay', stayRoutes) // ✅ Stay Routes
+app.use('/api/order', orderRoutes) // ✅ Orders API
 
 // ✅ Setup WebSockets
 setupSocketAPI(server)

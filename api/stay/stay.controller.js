@@ -10,6 +10,7 @@ export const stayController = {
 
 // ✅ GET ALL STAYS
 export async function getStays(req, res) {
+    console.log("🔍 Querying stays with filter:", req.query)  // 🚀 Debugging incoming data
     try {
         const stays = await stayService.query(req.query)
         res.json(stays)
