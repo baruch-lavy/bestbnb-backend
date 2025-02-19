@@ -7,11 +7,10 @@ import cookieParser from 'cookie-parser'
 import { authRoutes } from './api/auth/auth.routes.js'
 import { userRoutes } from './api/user/user.routes.js'
 import { reviewRoutes } from './api/review/review.routes.js'
-import { stayRoutes } from './api/stay/stay.routes.js' // ✅ UPDATED to stayRoutes
+import { stayRoutes } from './api/stay/stay.routes.js' // ✅ Stay Routes
 import { setupSocketAPI } from './services/socket.service.js'
 
 import { setupAsyncLocalStorage } from './middlewares/setupAls.middleware.js'
-import { dbService } from './services/db.service.js'
 import { logger } from './services/logger.service.js'
 
 const app = express()
@@ -21,7 +20,7 @@ const server = http.createServer(app)
 app.use(cookieParser())
 app.use(express.json())
 
-// ✅ CORS Setup (Development & Production)
+// ✅ CORS Setup
 const corsOptions = {
     origin: [
         'http://127.0.0.1:3000',
@@ -40,34 +39,13 @@ app.all('*', setupAsyncLocalStorage)
 app.use('/api/auth', authRoutes)
 app.use('/api/user', userRoutes)
 app.use('/api/review', reviewRoutes)
-
-app.use('/api/stay', stayRoutes) // ✅ UPDATED to stayRoutes
+app.use('/api/stay', stayRoutes) // ✅ Stay Routes
 
 // ✅ Setup WebSockets
 setupSocketAPI(server)
 
-// ✅ Handle `GET /test` route (Debugging)
-app.get('/test', async (req, res) => {
-    try {
-        const collection = await dbService.getCollection('stay')
-        if (!collection) {
-            console.error("❌ Collection not found")
-            return res.status(500).json({ error: 'Collection not found' })
-        }
-
-        console.log("✅ Successfully connected to 'stays' collection")
-
-        const stays = await collection.find().toArray()
-        console.log("Fetched stays:", stays) // 🔍 Debugging
-
-        res.json(stays)
-    } catch (err) {
-        console.error("❌ DB connection failed:", err)
-        res.status(500).json({ error: 'DB connection failed' })
-    }
-})
-
 // ✅ Serve React App (Handles Frontend Routing)
+// app.use(express.static('public'))
 // app.get('/**', (req, res) => {
 //     res.sendFile(path.resolve('public/index.html'))
 // })
