@@ -20,10 +20,12 @@ const server = http.createServer(app)
 // ✅ Express App Config
 app.use(cookieParser())
 app.use(express.json())
+app.use(express.urlencoded({ extended: true })) 
 
 // ✅ CORS Setup
 const corsOptions = {
     origin: [
+        '*',
         'http://127.0.0.1:3000',
         'http://localhost:3030',
         'http://127.0.0.1:5173',

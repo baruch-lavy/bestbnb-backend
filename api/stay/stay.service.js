@@ -17,42 +17,78 @@ export const stayService = {
 }
 
 // ✅ FETCH STAYS WITH FILTERING & PAGINATION
-async function query(filterBy = {}) {
+async function query(filterBy = { txt: '', minPrice: 0, maxPrice: Infinity, destination: '', guests: 1, startDate: null, endDate: null, category: null }) {
     try {
-        const collection = await dbService.getCollection('stay')
+        console.log('🔍 Raw filterBy:', filterBy) // ✅ Debugging
         
-        // ✅ Build the filter criteria
+        const collection = await dbService.getCollection('stay')
+
         const criteria = {}
 
-        // ✅ Filter by destination
-        if (filterBy.destination && filterBy.destination !== '') {
-            const regex = new RegExp(filterBy.destination, 'i')
-            criteria['loc.city'] = regex
+        // ✅ Convert `guests` to a valid number if it's an object
+        let totalGuests = 1 // Default to 1 guest
+        if (typeof filterBy.guests === "string") {
+            try {
+                const parsedGuests = JSON.parse(decodeURIComponent(filterBy.guests))
+                totalGuests = (parsedGuests.adults || 0) + (parsedGuests.children || 0) // ✅ Sum up adults & children
+            } catch (err) {
+                console.error("❌ Failed to parse guests:", err)
+            }
+        } else if (typeof filterBy.guests === "number") {
+            totalGuests = filterBy.guests
         }
 
-        // ✅ Filter by guests (Only if guests > 0)
-        if (filterBy.guests && filterBy.guests > 0) {
-            criteria.capacity = { $gte: filterBy.guests }
+        console.log('👥 Total guests:', totalGuests) // ✅ Debugging
+
+        // ✅ Destination Filtering (Fix: use `loc.country` instead of `location`)
+        if (filterBy.destination) {
+            const regex = new RegExp(filterBy.destination.replace(/[-[\]{}()*+?.,\\^$|#\s]/g, "\\$&"), 'i') // ✅ Escape special characters & allow spaces
+            criteria.$or = [
+                { "loc.city": regex },
+                { "loc.country": regex }
+            ]
         }
 
-        // ✅ Filter by price range
-        const minPrice = parseInt(filterBy.minPrice) || 0
-        const maxPrice = filterBy.maxPrice === 'Infinity' ? Number.MAX_SAFE_INTEGER : parseInt(filterBy.maxPrice)
-        criteria.price = { $gte: minPrice, $lte: maxPrice }
+        // ✅ Price Filtering
+        const minPrice = Number(filterBy.minPrice) || 0
+        const maxPrice = Number(filterBy.maxPrice)
+        const priceFilter = { $gte: minPrice }
+        if (!isNaN(maxPrice)) priceFilter.$lte = maxPrice
+        criteria.price = priceFilter
 
-        // ✅ Filter by search text (applies to stay name and description)
-        if (filterBy.txt && filterBy.txt.trim() !== '') {
-            const regex = new RegExp(filterBy.txt, 'i')
-            criteria.$or = [{ name: regex }, { summary: regex }]
+        // ✅ Guest Filtering (Fix: Use `totalGuests` instead of `guests`)
+        // if (totalGuests > 0) {
+            // criteria.capacity = { $gte: totalGuests }
+        // }
+
+        // ✅ FIXED: Date Filtering (Convert `dates` string to actual dates)
+        // if (filterBy.startDate && filterBy.endDate) {
+        //     const searchStart = new Date(filterBy.startDate).getTime()
+        //     const searchEnd = new Date(filterBy.endDate).getTime()
+
+        //     criteria.dates = {
+        //         $elemMatch: {
+        //             start: { $gte: searchStart },
+        //             end: { $lte: searchEnd }
+        //         }
+        //     }
+        // }
+
+        // ✅ Category Filtering
+        if (filterBy.category) {
+            criteria.$or = [
+                { type: { $regex: new RegExp(filterBy.category, 'i') } },
+                { labels: { $regex: new RegExp(filterBy.category, 'i') } }
+            ]
         }
 
-        console.log("🔍 Querying stays with criteria:", criteria)
+        console.log('📝 Final MongoDB Query:', criteria) // ✅ Debugging
 
-        // ✅ Fetch stays from MongoDB
         const stays = await collection.find(criteria).toArray()
         return stays
+
     } catch (err) {
-        logger.error('❌ Failed to fetch stays', err)
+        console.error('❌ Failed to get stays:', err)
         throw err
     }
 }
