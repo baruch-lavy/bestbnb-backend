@@ -84,28 +84,27 @@ async function add(stay) {
 }
 
 // ✅ UPDATE A STAY
-async function update(stay) {
+export async function update(stayId, stayData) {
     try {
         const collection = await dbService.getCollection('stay')
-        const stayToSave = {
-            name: stay.name,
-            price: stay.price,
-            capacity: stay.capacity,
-            imgUrls: stay.imgUrls,
-            labels: stay.labels,
-            loc: stay.loc,
-        }
-        console.log('stayToSave:', stayToSave)
+        const criteria = { _id: new ObjectId(stayId) }
 
-        await collection.updateOne({ _id: new ObjectId(stay._id) }, { $set: stayToSave })
-        console.log('stay:', stay)
-        return stay
+        console.log("🔍 Updating stay:", criteria, stayData)  // 🚀 Debugging
+
+        const updateRes = await collection.updateOne(criteria, { $set: stayData })
+
+        if (updateRes.modifiedCount === 0) {
+            console.log("⚠️ No stay was updated. Check if the ID exists.")
+            return null
+        }
+
+        console.log("✅ Stay successfully updated:", stayData)  // 🚀 Debugging
+        return { _id: stayId, ...stayData }
     } catch (err) {
-        logger.error(`❌ Cannot update stay ${stay._id}:`, err)
+        console.error("❌ Error updating stay:", err)
         throw err
     }
 }
-
 // ✅ ADD A MESSAGE/REVIEW TO A STAY
 async function addStayMsg(stayId, msg) {
     try {

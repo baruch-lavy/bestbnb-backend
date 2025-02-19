@@ -40,15 +40,28 @@ export async function addStay(req, res) {
 
 // ✅ UPDATE STAY
 export async function updateStay(req, res) {
-	console.log('req.body:', req)
     try {
-        const updatedStay = await stayService.update(req.params.id, req.body)
+        const stayId = req.params.id
+        const stayToSave = req.body
+
+        console.log("🔍 Updating stay:", stayId, stayToSave)  // 🚀 Debugging incoming data
+
+        if (!stayToSave || Object.keys(stayToSave).length === 0) {
+            return res.status(400).json({ error: "Invalid stay data" })
+        }
+
+        const updatedStay = await stayService.update(stayId, stayToSave)
+
+        if (!updatedStay) {
+            return res.status(404).json({ error: "Stay not found" })
+        }
+
         res.json(updatedStay)
     } catch (err) {
-        res.status(500).json({ error: 'Failed to update stay' })
+        console.error("❌ Error updating stay:", err)
+        res.status(500).json({ error: "Failed to update stay" })
     }
 }
-
 // ✅ DELETE STAY
 export async function deleteStay(req, res) {
     try {
