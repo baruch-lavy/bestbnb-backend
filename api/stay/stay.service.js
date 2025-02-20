@@ -42,12 +42,26 @@ async function query(filterBy = { txt: '', minPrice: 0, maxPrice: Infinity, dest
 
         // ✅ Destination Filtering (Fix: use `loc.country` instead of `location`)
         if (filterBy.destination) {
-            const regex = new RegExp(filterBy.destination.replace(/[-[\]{}()*+?.,\\^$|#\s]/g, "\\$&"), 'i') // ✅ Escape special characters & allow spaces
-            criteria.$or = [
-                { "loc.city": regex },
-                { "loc.country": regex }
-            ]
+            // ✅ Normalize input and remove extra spaces
+            const destination = filterBy.destination.trim().replace(/\s*,\s*/g, ',') // Remove spaces around commas
+        
+            // ✅ Split into words
+            const words = destination.split(/\s*,\s*|\s+/) // Split by commas or spaces
+        
+            // ✅ Create regex filters for each word (escape special characters)
+            const regexArray = words.map(word => 
+                new RegExp(word.replace(/[-[\]{}()*+?.,\\^$|#\s]/g, "\\$&"), 'i')
+            )
+        
+            // ✅ Ensure city & country are checked for each word
+            criteria.$and = regexArray.map(regex => ({
+                $or: [
+                    { "loc.city": regex },
+                    { "loc.country": regex }
+                ]
+            }))
         }
+        
 
         // ✅ Price Filtering
         const minPrice = Number(filterBy.minPrice) || 0

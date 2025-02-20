@@ -25,6 +25,7 @@ export async function getOrderById(req, res) {
 
 // ✅ ADD NEW ORDER
 export async function addOrder(req, res) {
+    console.log('req.body:', req.body)
     try {
         const addedOrder = await orderService.add(req.body)
         res.json(addedOrder)
