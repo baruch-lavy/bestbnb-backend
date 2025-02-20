@@ -5,72 +5,72 @@ import { authService } from '../auth/auth.service.js'
 import { reviewService } from './review.service.js'
 
 export async function getReviews(req, res) {
-	try {
-		const reviews = await reviewService.query(req.query)
-		res.send(reviews)
-	} catch (err) {
-		logger.error('Cannot get reviews', err)
-		res.status(400).send({ err: 'Failed to get reviews' })
-	}
+    try {
+        console.log("🔍 Incoming request for reviews:", req.query) // Debugging
+        const reviews = await reviewService.query(req.query)
+        res.json(reviews)
+    } catch (err) {
+        logger.error('❌ Failed to get reviews', err)
+        res.status(400).send({ error: 'Failed to get reviews' })
+    }
 }
 
 export async function deleteReview(req, res) {
-	var { loggedinUser } = req
+    const { loggedinUser } = req
+    if (!loggedinUser) return res.status(401).send({ error: "Unauthorized" })
+
     const { id: reviewId } = req.params
-    
-	try {
-		const deletedCount = await reviewService.remove(reviewId)
-		if (deletedCount === 1) {
+
+    try {
+        const deletedCount = await reviewService.remove(reviewId, loggedinUser)
+        if (deletedCount === 1) {
             socketService.broadcast({ type: 'review-removed', data: reviewId, userId: loggedinUser._id })
-			res.send({ msg: 'Deleted successfully' })
-		} else {
-			res.status(400).send({ err: 'Cannot remove review' })
-		}
-	} catch (err) {
-		logger.error('Failed to delete review', err)
-		res.status(400).send({ err: 'Failed to delete review' })
-	}
+            res.send({ message: 'Deleted successfully' })
+        } else {
+            res.status(400).send({ error: 'Cannot remove review' })
+        }
+    } catch (err) {
+        logger.error('❌ Failed to delete review', err)
+        res.status(400).send({ error: 'Failed to delete review' })
+    }
 }
 
 export async function addReview(req, res) {
-	var { loggedinUser } = req
+    const { loggedinUser } = req
+    if (!loggedinUser) return res.status(401).send({ error: "Unauthorized" })
 
-	try {
-		var review = req.body
-		const { aboutUserId } = review
-		review.byUserId = loggedinUser._id
-		review = await reviewService.add(review)
+    try {
+        let review = req.body
+        review.byUserId = loggedinUser._id
 
-		// Give the user credit for adding a review
-		// var user = await userService.getById(review.byUserId)
-		// user.score += 10
+        review = await reviewService.add(review)
 
-		loggedinUser.score += 10
-		await userService.update(loggedinUser)
+        // Increase user score for adding a review
+        loggedinUser.score += 10
+        await userService.update(loggedinUser)
 
-		// Update user score in login token as well
+        // Update user token
+        const loginToken = authService.getLoginToken(loggedinUser)
+        res.cookie('loginToken', loginToken)
 
-		const loginToken = authService.getLoginToken(loggedinUser)
-		res.cookie('loginToken', loginToken)
+        // Attach user details
+        review.byUser = loggedinUser
+        review.aboutUser = await userService.getById(review.aboutUserId)
 
-		// prepare the updated review for sending out
+        delete review.aboutUser.givenReviews
+        delete review.aboutUserId
+        delete review.byUserId
 
-		review.byUser = loggedinUser
-		review.aboutUser = await userService.getById(aboutUserId)
+        // Notify users via sockets
+        socketService.broadcast({ type: 'review-added', data: review, userId: loggedinUser._id })
+        socketService.emitToUser({ type: 'review-about-you', data: review, userId: review.aboutUser._id })
 
-		delete review.aboutUser.givenReviews
-		delete review.aboutUserId
-		delete review.byUserId
+        const fullUser = await userService.getById(loggedinUser._id)
+        socketService.emitTo({ type: 'user-updated', data: fullUser, label: fullUser._id })
 
-		socketService.broadcast({ type: 'review-added', data: review, userId: loggedinUser._id })
-		socketService.emitToUser({ type: 'review-about-you', data: review, userId: review.aboutUser._id })
-
-		const fullUser = await userService.getById(loggedinUser._id)
-		socketService.emitTo({ type: 'user-updated', data: fullUser, label: fullUser._id })
-
-		res.send(review)
-	} catch (err) {
-		logger.error('Failed to add review', err)
-		res.status(400).send({ err: 'Failed to add review' })
-	}
+        res.json(review)
+    } catch (err) {
+        logger.error('❌ Failed to add review', err)
+        res.status(400).send({ error: 'Failed to add review' })
+    }
 }
