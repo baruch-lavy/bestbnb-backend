@@ -3,12 +3,16 @@ import { logger } from '../../services/logger.service.js'
 import { asyncLocalStorage } from '../../services/als.service.js'
 import { ObjectId } from 'mongodb'
 
+const COLLECTION_NAME = 'order' // ✅ Add this at the top
+
+
 export const orderService = {
     query,
     getById,
     add,
     update,
     remove,
+    getOrdersByUser,
 }
 
 // ✅ GET ALL ORDERS
@@ -33,6 +37,22 @@ async function getById(orderId) {
     }
 }
 
+async function getOrdersByUser(userId) {
+    console.log('🔍 Checking userId:', userId) // Debugging log
+
+    if (!ObjectId.isValid(userId)) throw new Error(`Invalid ObjectId: ${userId}`)
+
+    const collection = await dbService.getCollection(COLLECTION_NAME)
+
+    return collection.find({
+        $or: [
+            { "guest._id": userId }, // ✅ Match orders where user is stored as guest._id (String)
+            { buyerId: new ObjectId(userId) } // ✅ Match orders where user is stored as buyerId (ObjectId)
+        ]
+    }).toArray()
+}
+
+
 // ✅ ADD ORDER (With ALS)
 async function add(order) {
     try {
@@ -48,6 +68,14 @@ async function add(order) {
         }
 
         const { insertedId } = await collection.insertOne(orderToAdd)
+
+           // ✅ Add the order ID to the user's `orders` array
+           const userCollection = await dbService.getCollection('user')
+           await userCollection.updateOne(
+               { _id: orderToAdd.buyerId },
+               { $push: { orders: orderToAdd._id } }
+           )
+
         return { ...orderToAdd, _id: insertedId }
     } catch (err) {
         logger.error('Failed to add order', err)

@@ -73,10 +73,16 @@ async function add(user) {
             isAdmin: user.isAdmin || false,
             wishlist: [], // Users start with an empty wishlist
             joinedAt: new Date(),
+            orders:user.orders || [] 
         }
+        console.log('🚀 ~ file: user.service.js ~ line 96 ~ add ~ userToAdd', userToAdd)
 
         const collection = await dbService.getCollection('user')
         const result = await collection.insertOne(userToAdd)
+        await collection.updateOne(
+            { _id: result.insertedId },
+            { $set: { orders: [] } }
+        )
 
         userToAdd._id = result.insertedId // Assign generated ID to new user
         delete userToAdd.password // Ensure we don't expose passwords

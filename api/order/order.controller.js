@@ -23,6 +23,20 @@ export async function getOrderById(req, res) {
     }
 }
 
+export async function getOrdersByUser(req, res) {
+    console.log('req.params:', req.params)
+    try {
+        const userId = req.params.userId
+        if (!userId) return res.status(400).json({ error: 'User ID is required' })
+
+        const orders = await orderService.getOrdersByUser(userId) // ✅ Use orderService
+        res.json(orders)
+    } catch (error) {
+        logger.error('Failed to fetch user orders:', error)
+        res.status(500).json({ error: 'Failed to fetch orders' })
+    }
+}
+
 // ✅ ADD NEW ORDER
 export async function addOrder(req, res) {
     console.log('req.body:', req.body)
