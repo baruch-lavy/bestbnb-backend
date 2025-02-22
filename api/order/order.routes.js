@@ -12,7 +12,7 @@ router.get('/:id', getOrderById)
 router.post('/', requireAuth, addOrder)
 router.put('/:id', requireAuth, updateOrder)
 router.delete('/:id', requireAuth, deleteOrder)
-router.get('/user/:userId', getOrdersByUser)
+router.get('/user/:userId', requireAuth, getOrdersByUser)
 
 
 export const orderRoutes = router

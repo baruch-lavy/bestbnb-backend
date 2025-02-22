@@ -90,27 +90,36 @@ async function update(orderId, orderUpdates) {
         if (!loggedinUser) throw new Error('User not logged in')
 
         const collection = await dbService.getCollection('order')
+
+        if (!ObjectId.isValid(orderId)) {
+            throw new Error(`Invalid ObjectId: ${orderId}`)
+        }
+
         const objectId = new ObjectId(orderId)
 
         // ✅ Fetch the order to verify ownership
         const existingOrder = await collection.findOne({ _id: objectId })
         if (!existingOrder) throw new Error('Order not found')
 
-        // ✅ Only allow updating if the user is the buyer or an admin
-        if (existingOrder.buyerId.toString() !== loggedinUser._id && !loggedinUser.isAdmin) {
+        // ✅ Ensure buyer or admin can update
+        const buyerId = existingOrder.buyerId.toString()
+        if (buyerId !== loggedinUser._id && !loggedinUser.isAdmin) {
             throw new Error('Unauthorized: Cannot update this order')
         }
 
+        // ✅ Perform the update
         const result = await collection.findOneAndUpdate(
             { _id: objectId },
             { $set: orderUpdates },
             { returnDocument: 'after' }
         )
 
-        if (!result.value) throw new Error('Order not updated')
-        return result.value
+        if (!result) throw new Error('Order update failed')
+
+        logger.info(`✅ Order ${orderId} updated successfully`)
+        return result
     } catch (err) {
-        logger.error(`Failed to update order ${orderId}`, err)
+        logger.error(`❌ Failed to update order ${orderId}:`, err)
         throw err
     }
 }

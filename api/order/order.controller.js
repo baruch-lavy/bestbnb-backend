@@ -1,5 +1,6 @@
 import { orderService } from './order.service.js'
 import { logger } from '../../services/logger.service.js'
+import { ObjectId } from 'mongodb'
 
 // ✅ GET ALL ORDERS
 export async function getOrders(req, res) {
@@ -52,13 +53,24 @@ export async function addOrder(req, res) {
 // ✅ UPDATE ORDER
 export async function updateOrder(req, res) {
     try {
-        const updatedOrder = await orderService.update(req.params.id, req.body)
+        const { status } = req.body // ✅ Extract status from request body
+        console.log('status:', status)
+        const orderId = req.params.id
+
+        if (!ObjectId.isValid(orderId)) {
+            return res.status(400).json({ error: 'Invalid Order ID' }) // ✅ Handle invalid ObjectId
+        }
+
+        const updatedOrder = await orderService.update(orderId, { status }) // ✅ Use service
+        if (!updatedOrder) return res.status(404).json({ error: 'Order not found' }) // ✅ Handle missing order
+
         res.json(updatedOrder)
     } catch (err) {
-        logger.error('Failed to update order', err)
-        res.status(500).json({ error: 'Failed to update order' })
+        console.error("❌ Failed to update order:", err)
+        res.status(500).json({ error: "Failed to update order" })
     }
 }
+
 
 // ✅ DELETE ORDER
 export async function deleteOrder(req, res) {
