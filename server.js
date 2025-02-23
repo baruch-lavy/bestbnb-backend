@@ -3,6 +3,7 @@ import path from 'path'
 import cors from 'cors'
 import express from 'express'
 import cookieParser from 'cookie-parser'
+import { Server } from 'socket.io'
 
 import { authRoutes } from './api/auth/auth.routes.js'
 import { userRoutes } from './api/user/user.routes.js'
@@ -17,10 +18,12 @@ import { logger } from './services/logger.service.js'
 const app = express()
 const server = http.createServer(app)
 
+
 // ✅ Express App Config
 app.use(cookieParser())
 app.use(express.json())
 app.use(express.urlencoded({ extended: true })) 
+
 
 // ✅ CORS Setup
 const corsOptions = {
@@ -57,18 +60,6 @@ setupSocketAPI(server)
 //     res.sendFile(path.resolve('public/index.html'))
 // })
 
-app.use((req, res, next) => {
-    console.log(`🔵 Incoming request: ${req.method} ${req.url}`)
-    next()
-})
-
-process.on('uncaughtException', (err) => {
-    console.error('🔥 Uncaught Exception:', err)
-})
-
-process.on('unhandledRejection', (err) => {
-    console.error('🔥 Unhandled Rejection:', err)
-})
 
 
 // ✅ Start Server

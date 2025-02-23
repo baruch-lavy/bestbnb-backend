@@ -113,7 +113,7 @@ async function add(order) {
 }
 
 // ✅ UPDATE ORDER (With ALS)
-
+import { socketService } from '../../services/socket.service.js'
 export async function updateOrder(orderId, orderUpdates) {
     console.log(`🟢 Entering updateOrder() for ID:`, orderId, orderUpdates)
 
@@ -165,6 +165,14 @@ export async function updateOrder(orderId, orderUpdates) {
         // ✅ Fetch the updated order to return
         const updatedOrder = await collection.findOne({ _id: objectId })
 
+         // 🔥 Emit real-time update to all clients
+         socketService.emitToUser({
+            type: `orderUpdated-${updatedOrder.buyerId}`, // Notify the buyer
+            data: updatedOrder,
+            userId: updatedOrder.buyerId
+        })
+
+         
         console.log(`✅ Order updated successfully!`, updatedOrder)
         return updatedOrder
     } catch (err) {
