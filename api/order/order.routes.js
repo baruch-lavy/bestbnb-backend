@@ -13,6 +13,8 @@ router.post('/', requireAuth, addOrder)
 router.put('/:id', requireAuth, updateOrder)
 router.delete('/:id', requireAuth, deleteOrder)
 router.get('/user/:userId', requireAuth, getOrdersByUser)
+// router.get('/host',requireAuth, getOrdersByHostController)
+
 
 
 export const orderRoutes = router

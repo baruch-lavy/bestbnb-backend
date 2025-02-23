@@ -5,10 +5,23 @@ import { ObjectId } from 'mongodb'
 // ✅ GET ALL ORDERS
 export async function getOrders(req, res) {
     try {
-        const orders = await orderService.query(req.query)
+        console.log('🔵 Entering getOrders() with query:', req.query)
+
+        // ✅ Get `hostId` from query params
+        const { hostId } = req.query
+        console.log('🆔 Host ID from query:', hostId)
+
+        if (!hostId) {
+            return res.status(400).json({ error: 'Missing hostId in query' })
+        }
+
+        // ✅ Fetch only orders for the requested `hostId`
+        const orders = await orderService.getOrdersByHost(hostId)
+        console.log('✅ Orders fetched:', orders.length)
+
         res.json(orders)
     } catch (err) {
-        logger.error('Failed to fetch orders', err)
+        console.error('❌ Failed to fetch orders:', err)
         res.status(500).json({ error: 'Failed to fetch orders' })
     }
 }
@@ -61,7 +74,7 @@ export async function updateOrder(req, res) {
             return res.status(400).json({ error: 'Invalid Order ID' }) // ✅ Handle invalid ObjectId
         }
 
-        const updatedOrder = await orderService.update(orderId, { status }) // ✅ Use service
+        const updatedOrder = await orderService.updateOrder(orderId, { status }) // ✅ Use service
         if (!updatedOrder) return res.status(404).json({ error: 'Order not found' }) // ✅ Handle missing order
 
         res.json(updatedOrder)

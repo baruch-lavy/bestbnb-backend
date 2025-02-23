@@ -10,9 +10,10 @@ export const orderService = {
     query,
     getById,
     add,
-    update,
+    updateOrder,
     remove,
     getOrdersByUser,
+    getOrdersByHost
 }
 
 // ✅ GET ALL ORDERS
@@ -52,6 +53,34 @@ async function getOrdersByUser(userId) {
     }).toArray()
 }
 
+// ✅ GET ORDERS BY HOST
+export async function getOrdersByHost(hostId) {
+    console.log(`🟢 Entering getOrdersByHost() with hostId:`, hostId)
+
+    try {
+        if (!ObjectId.isValid(hostId)) {
+            console.warn(`⚠️ Invalid ObjectId received. Returning empty result.`)
+            return []
+        }
+
+        const objectId = new ObjectId(hostId)
+
+        console.log(`🔍 Querying orders where hostId._id =`, objectId)
+
+        const collection = await dbService.getCollection('order')
+        console.log(`🔍 Collection found:`, collection.collectionName)
+
+        // ✅ Fix the query to match `hostId._id`
+        const orders = await collection.find({ "hostId._id": hostId }).toArray()
+
+        console.log(`✅ Orders found:`, orders.length)
+
+        return orders
+    } catch (err) {
+        console.error("❌ Failed to fetch orders by host:", err)
+        throw err
+    }
+}
 
 // ✅ ADD ORDER (With ALS)
 async function add(order) {
@@ -84,45 +113,66 @@ async function add(order) {
 }
 
 // ✅ UPDATE ORDER (With ALS)
-async function update(orderId, orderUpdates) {
+
+export async function updateOrder(orderId, orderUpdates) {
+    console.log(`🟢 Entering updateOrder() for ID:`, orderId, orderUpdates)
+
     try {
-        const { loggedinUser } = asyncLocalStorage.getStore()
-        if (!loggedinUser) throw new Error('User not logged in')
+        const store = asyncLocalStorage.getStore()
+        if (!store || !store.loggedinUser) {
+            console.error('❌ Not authenticated - No user session')
+            throw new Error('Not authenticated')
+        }
+
+        const userId = store.loggedinUser._id?.toString().trim()
+        console.log('🆔 Logged-in user:', userId)
 
         const collection = await dbService.getCollection('order')
 
-        if (!ObjectId.isValid(orderId)) {
-            throw new Error(`Invalid ObjectId: ${orderId}`)
+        const objectId = new ObjectId(orderId)
+        const order = await collection.findOne({ _id: objectId })
+
+        if (!order) {
+            console.error(`❌ Order not found for ID:`, orderId)
+            throw new Error('Order not found')
         }
 
-        const objectId = new ObjectId(orderId)
+        // ✅ Check if the user is the host OR the buyer
+        const isBuyer = order.buyerId?.toString() === userId
+        const isHost = order.hostId._id?.toString() === userId
 
-        // ✅ Fetch the order to verify ownership
-        const existingOrder = await collection.findOne({ _id: objectId })
-        if (!existingOrder) throw new Error('Order not found')
-
-        // ✅ Ensure buyer or admin can update
-        const buyerId = existingOrder.buyerId.toString()
-        if (buyerId !== loggedinUser._id && !loggedinUser.isAdmin) {
+        if (!isBuyer && !isHost) {
+            console.error(`❌ Unauthorized: User ${userId} cannot update this order`)
             throw new Error('Unauthorized: Cannot update this order')
         }
 
-        // ✅ Perform the update
-        const result = await collection.findOneAndUpdate(
+        // ✅ Allow only `status` updates
+        const allowedUpdates = { status: orderUpdates.status }
+        console.log(`🟢 Updating order in MongoDB with:`, allowedUpdates)
+
+        const result = await collection.updateOne(
             { _id: objectId },
-            { $set: orderUpdates },
-            { returnDocument: 'after' }
+            { $set: allowedUpdates }
         )
 
-        if (!result) throw new Error('Order update failed')
+        console.log(`🟢 MongoDB Update Result:`, result)
 
-        logger.info(`✅ Order ${orderId} updated successfully`)
-        return result
+        if (result.matchedCount === 0) {
+            console.error(`❌ Order not updated in MongoDB - No document matched`)
+            throw new Error('Order not updated')
+        }
+
+        // ✅ Fetch the updated order to return
+        const updatedOrder = await collection.findOne({ _id: objectId })
+
+        console.log(`✅ Order updated successfully!`, updatedOrder)
+        return updatedOrder
     } catch (err) {
-        logger.error(`❌ Failed to update order ${orderId}:`, err)
+        console.error(`❌ Failed to update order ${orderId}`, err)
         throw err
     }
 }
+
 
 // ✅ DELETE ORDER (With ALS)
 async function remove(orderId) {

@@ -14,6 +14,7 @@ export const authService = {
 }
 
 async function login(username, password) {
+	console.log('🚀 ~ file: auth.service.js ~ line 19 ~ login ~ username, password', username, password)
 	logger.debug(`auth.service - login with username: ${username}`)
 
 	const user = await userService.getByUsername(username)

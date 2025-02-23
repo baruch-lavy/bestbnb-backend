@@ -52,6 +52,7 @@ async function getById(userId) {
 
 // ✅ GET USER BY USERNAME
 async function getByUsername(username) {
+    console.log('🚀 ~ file: user.service.js ~ line 68 ~ getByUsername ~ username', username)
     try {
         const collection = await dbService.getCollection('user')
         return await collection.findOne({ username })

@@ -57,6 +57,20 @@ setupSocketAPI(server)
 //     res.sendFile(path.resolve('public/index.html'))
 // })
 
+app.use((req, res, next) => {
+    console.log(`🔵 Incoming request: ${req.method} ${req.url}`)
+    next()
+})
+
+process.on('uncaughtException', (err) => {
+    console.error('🔥 Uncaught Exception:', err)
+})
+
+process.on('unhandledRejection', (err) => {
+    console.error('🔥 Unhandled Rejection:', err)
+})
+
+
 // ✅ Start Server
 const port = process.env.PORT || 3030
 server.listen(port, () => {
