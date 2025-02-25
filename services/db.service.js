@@ -6,7 +6,7 @@ import { logger } from './logger.service.js'
 dotenv.config()
 
 const MONGO_URI = process.env.MONGO_URI || 'mongodb+srv://baruchlavy:1721@cluster0.mr14t.mongodb.net/stayDB?retryWrites=true&w=majority'// 🔥 Get from .env
-const DB_NAME = process.env.DB_NAME || 'stayDB' // 🔥 Default if not set
+const DB_NAME = process.env.DB_NAME || 'stayDB' //  Default if not set
 
 export const dbService = { getCollection }
 
