@@ -22,23 +22,26 @@ const server = http.createServer(app)
 // ✅ Express App Config
 app.use(cookieParser())
 app.use(express.json())
-app.use(express.urlencoded({ extended: true })) 
+app.use(express.urlencoded({ extended: true }))
 
-
-// ✅ CORS Setup
-const corsOptions = {
-    origin: [
-        '*',
-        'http://127.0.0.1:3000',
-        'http://localhost:3030',
-        'http://127.0.0.1:5173',
-        'http://localhost:5173',
-        'http://localhost:5174',
-        'http://127.0.0.1:5174',
-    ],
-    credentials: true
+if (process.env.NODE_ENV === 'production') {
+    app.use(express.static(path.resolve('public')))
+} else {
+    // ✅ CORS Setup
+    const corsOptions = {
+        origin: [
+            '*',
+            'http://127.0.0.1:3000',
+            'http://localhost:3030',
+            'http://127.0.0.1:5173',
+            'http://localhost:5173',
+            'http://localhost:5174',
+            'http://127.0.0.1:5174',
+        ],
+        credentials: true
+    }
+    app.use(cors(corsOptions))
 }
-app.use(cors(corsOptions))
 
 // ✅ Apply AsyncLocalStorage Middleware
 app.all('*', setupAsyncLocalStorage)
