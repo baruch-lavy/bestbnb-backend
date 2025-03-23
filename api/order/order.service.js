@@ -167,7 +167,13 @@ export async function updateOrder(orderId, orderUpdates) {
 
          // 🔥 Emit real-time update to all clients
          socketService.emitToUser({
-            type: `orderUpdated-${updatedOrder.buyerId}`, // Notify the buyer
+            type: `order-updated`, // Notify the buyer
+            data: updatedOrder,
+            userId: updatedOrder.buyerId
+        })
+
+        socketService.emitToUser({
+            type: `new-oreder-msg`, // Notify the buyer
             data: updatedOrder,
             userId: updatedOrder.buyerId
         })
