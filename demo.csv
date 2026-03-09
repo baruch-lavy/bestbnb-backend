@@ -1,0 +1,13 @@
+category,urgency,message,agentCodeName,createdAt
+Maintenance,High,Leaking faucet in the kitchen,agent007,2024-06-01T10:00:00Z
+Cleaning,Medium,Stains on the living room carpet,agent007,2024-06-02T14:30:00Z
+Noise,Low,Neighbor's loud music at night,agent007,2024-06-03T22:15:00Z
+Maintenance,High,Air conditioning not working,agent007,2024-06-04T09:45:00Z
+Cleaning,Medium,Dirty windows in the bedroom,agent007,2024-06-05T11:20:00Z
+Noise,Low,Construction noise during the day,agent007,2024-06-06T13:00:00Z
+Maintenance,High,Clogged bathroom drain,agent007,2024-06-07T08:30:00Z
+Cleaning,Medium,Unpleasant odor in the kitchen,agent007,2024-06-08T15:45:00Z
+Noise,Low,Dog barking in the neighborhood,agent007,2024-06-09T19:00:00Z
+Maintenance,High,Broken window in the living room,agent007,2024-06-10T12:00:00Z
+Cleaning,Medium,Spills on the dining table,agent007,2024-06-11T16:30:00Z
+Noise,Low,Traffic noise from the nearby road,agent007,2024-06-12T20:00:00Z
