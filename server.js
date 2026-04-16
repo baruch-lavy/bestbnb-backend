@@ -46,7 +46,7 @@ if (process.env.NODE_ENV === 'production') {
 }
 
 // ✅ Apply AsyncLocalStorage Middleware
-app.all('*', setupAsyncLocalStorage)
+app.all('*splat', setupAsyncLocalStorage)
 
 // ✅ API Routes
 app.use('/api/auth', authRoutes)
