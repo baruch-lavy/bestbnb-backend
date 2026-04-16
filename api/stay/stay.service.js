@@ -14,6 +14,7 @@ export const stayService = {
     update,
     addStayMsg,
     removeStayMsg,
+    getReviewerProfile,
 }
 
 // ✅ FETCH STAYS WITH FILTERING & PAGINATION
@@ -202,7 +203,52 @@ async function removeStayMsg(stayId, msgId) {
         throw err
     }
 }
+// ✅ GET REVIEWER / HOST PROFILE
+async function getReviewerProfile(personId) {
+    try {
+        const collection = await dbService.getCollection('stay')
 
+        const [hostedStays, staysWithReviews] = await Promise.all([
+            collection.find(
+                { 'host._id': personId },
+                { projection: { name: 1, imgUrls: 1, price: 1, loc: 1, type: 1, host: 1 } }
+            ).toArray(),
+            collection.find(
+                { 'reviews.by._id': personId },
+                { projection: { name: 1, imgUrls: 1, reviews: 1 } }
+            ).toArray()
+        ])
+
+        // Host object has richer info (about, isSuperhost, etc.)
+        let person = null
+        if (hostedStays.length > 0) {
+            person = hostedStays[0].host
+        }
+
+        // Extract only reviews written by this person from each stay
+        const reviews = []
+        staysWithReviews.forEach(stay => {
+            stay.reviews
+                .filter(r => r.by._id === personId)
+                .forEach(r => {
+                    if (!person) person = r.by
+                    reviews.push({
+                        ...r,
+                        stayId: stay._id,
+                        stayName: stay.name,
+                        stayImgUrl: stay.imgUrls?.[0]
+                    })
+                })
+        })
+
+        const cleanedHostedStays = hostedStays.map(({ host, ...stay }) => stay)
+
+        return { person, hostedStays: cleanedHostedStays, reviews }
+    } catch (err) {
+        logger.error(`Failed to get reviewer profile: ${personId}`, err)
+        throw err
+    }
+}
 // ✅ BUILD QUERY FILTERS
 function _buildCriteria(filterBy) {
     const criteria = {}

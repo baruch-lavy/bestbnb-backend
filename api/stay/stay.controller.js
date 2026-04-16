@@ -5,7 +5,8 @@ export const stayController = {
     getStayById,
     addStay,
     updateStay,
-    deleteStay
+    deleteStay,
+    getReviewerProfile
 }
 
 // ✅ GET ALL STAYS
@@ -16,6 +17,16 @@ export async function getStays(req, res) {
         res.json(stays)
     } catch (err) {
         res.status(500).json({ error: 'Failed to fetch stays' })
+    }
+}
+
+// ✅ GET REVIEWER / HOST PROFILE
+export async function getReviewerProfile(req, res) {
+    try {
+        const profile = await stayService.getReviewerProfile(req.params.id)
+        res.json(profile)
+    } catch (err) {
+        res.status(500).json({ error: 'Failed to fetch reviewer profile' })
     }
 }
 
