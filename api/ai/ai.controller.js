@@ -1,7 +1,12 @@
 import OpenAI from 'openai'
 import { logger } from '../../services/logger.service.js'
+import { dbService } from '../../services/db.service.js'
+import { asyncLocalStorage } from '../../services/als.service.js'
 
 const openai = new OpenAI({ apiKey: process.env.OPENAI_API_KEY })
+
+const SEARCH_LIMIT = 10
+const LIMIT_MS = 24 * 60 * 60 * 1000 // 24 hours
 
 const VALID_CATEGORIES = [
     'Villa', 'Cabin', 'Cottage', 'Penthouse', 'Apartment', 'Beachfront', 'Luxury',
@@ -56,6 +61,29 @@ export async function parseFilter(req, res) {
         const { query } = req.body
         if (!query || typeof query !== 'string' || query.trim().length === 0) {
             return res.status(400).json({ err: 'query is required' })
+        }
+
+        // Rate limiting
+        const store = asyncLocalStorage.getStore()
+        const usageKey = store?.loggedinUser?._id || req.ip
+        const collection = await dbService.getCollection('ai_usage')
+        const now = new Date()
+
+        let usageDoc = await collection.findOne({ key: usageKey })
+
+        if (usageDoc && usageDoc.resetAt > now) {
+            // Within the 24h window
+            if (usageDoc.count >= SEARCH_LIMIT) {
+                return res.status(429).json({ err: 'LIMIT_REACHED', resetAt: usageDoc.resetAt })
+            }
+            await collection.updateOne({ key: usageKey }, { $inc: { count: 1 } })
+        } else {
+            // First search or window expired — reset
+            await collection.updateOne(
+                { key: usageKey },
+                { $set: { key: usageKey, count: 1, resetAt: new Date(now.getTime() + LIMIT_MS) } },
+                { upsert: true }
+            )
         }
 
         const completion = await openai.chat.completions.create({

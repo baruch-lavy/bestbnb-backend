@@ -35,9 +35,20 @@ async function _connect() {
         dbConn = client.db(DB_NAME)
         
         logger.info(`✅ Connected to MongoDB: ${DB_NAME}`)
+        await _setupTTLIndex(dbConn)
         return dbConn
     } catch (err) {
         logger.error('❌ Cannot connect to MongoDB', err)
         throw err
+    }
+}
+
+async function _setupTTLIndex(db) {
+    try {
+        const collection = db.collection('ai_usage')
+        await collection.createIndex({ resetAt: 1 }, { expireAfterSeconds: 0 })
+        logger.info('✅ TTL index on ai_usage.resetAt ensured')
+    } catch (err) {
+        logger.error('❌ Failed to create TTL index on ai_usage', err)
     }
 }
