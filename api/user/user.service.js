@@ -12,6 +12,7 @@ export const userService = {
     getByUsername,
     addToWishlist,
     removeFromWishlist,
+    getWishlist,
 }
 
 // ✅ GET ALL USERS
@@ -142,15 +143,16 @@ async function update(userId, userUpdates) {
 
         if (Object.keys(userToSave).length === 0) throw new Error("🚨 No changes detected. MongoDB ignores identical updates.")
 
+        // MongoDB driver v6: findOneAndUpdate returns the document directly
         const result = await collection.findOneAndUpdate(
             { _id: objectId },
             { $set: userToSave },
             { returnDocument: "after" }
         )
 
-        if (!result.value) throw new Error(`🚨 User not updated: ${userId}`)
+        if (!result) throw new Error(`🚨 User not updated: ${userId}`)
 
-        return result.value
+        return result
     } catch (err) {
         logger.error(`Cannot update user ${userId}`, err)
         throw err
@@ -164,13 +166,14 @@ async function addToWishlist(stayId) {
         if (!loggedinUser) throw new Error('User not logged in')
 
         const collection = await dbService.getCollection('user')
+        // MongoDB driver v6: findOneAndUpdate returns the document directly
         const updatedUser = await collection.findOneAndUpdate(
             { _id: new ObjectId(loggedinUser._id) },
             { $addToSet: { wishlist: new ObjectId(stayId) } },
             { returnDocument: 'after' }
         )
 
-        return updatedUser.value
+        return updatedUser
     } catch (err) {
         logger.error(`Cannot add stay ${stayId} to wishlist for user`, err)
         throw err
@@ -184,15 +187,36 @@ async function removeFromWishlist(stayId) {
         if (!loggedinUser) throw new Error('User not logged in')
 
         const collection = await dbService.getCollection('user')
+        // MongoDB driver v6: findOneAndUpdate returns the document directly
         const updatedUser = await collection.findOneAndUpdate(
             { _id: new ObjectId(loggedinUser._id) },
             { $pull: { wishlist: new ObjectId(stayId) } },
             { returnDocument: 'after' }
         )
 
-        return updatedUser.value
+        return updatedUser
     } catch (err) {
         logger.error(`Cannot remove stay ${stayId} from wishlist for user`, err)
+        throw err
+    }
+}
+
+// ✅ GET WISHLIST (returns full stay objects)
+async function getWishlist() {
+    try {
+        const { loggedinUser } = asyncLocalStorage.getStore()
+        if (!loggedinUser) throw new Error('User not logged in')
+
+        const userCollection = await dbService.getCollection('user')
+        const user = await userCollection.findOne({ _id: new ObjectId(loggedinUser._id) })
+        if (!user || !user.wishlist || !user.wishlist.length) return []
+
+        const stayCollection = await dbService.getCollection('stay')
+        const stayIds = user.wishlist.map(id => new ObjectId(id))
+        const stays = await stayCollection.find({ _id: { $in: stayIds } }).toArray()
+        return stays
+    } catch (err) {
+        logger.error('Cannot get wishlist', err)
         throw err
     }
 }

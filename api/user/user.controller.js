@@ -77,8 +77,8 @@ export async function updateUser(req, res) {
 // ✅ ADD STAY TO WISHLIST
 export async function addToWishlist(req, res) {
     try {
-        const { userId, stayId } = req.body
-        const updatedUser = await userService.addToWishlist(userId, stayId)
+        const { stayId } = req.body
+        const updatedUser = await userService.addToWishlist(stayId)
         res.send(updatedUser)
     } catch (err) {
         logger.error('Failed to add stay to wishlist', err)
@@ -89,11 +89,22 @@ export async function addToWishlist(req, res) {
 // ✅ REMOVE STAY FROM WISHLIST
 export async function removeFromWishlist(req, res) {
     try {
-        const { userId, stayId } = req.body
-        const updatedUser = await userService.removeFromWishlist(userId, stayId)
+        const { stayId } = req.body
+        const updatedUser = await userService.removeFromWishlist(stayId)
         res.send(updatedUser)
     } catch (err) {
         logger.error('Failed to remove stay from wishlist', err)
         res.status(400).send({ err: 'Failed to remove stay from wishlist' })
+    }
+}
+
+// ✅ GET WISHLIST (full stay objects)
+export async function getWishlist(req, res) {
+    try {
+        const stays = await userService.getWishlist()
+        res.send(stays)
+    } catch (err) {
+        logger.error('Failed to get wishlist', err)
+        res.status(400).send({ err: 'Failed to get wishlist' })
     }
 }

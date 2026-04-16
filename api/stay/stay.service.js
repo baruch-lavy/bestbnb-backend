@@ -97,6 +97,36 @@ async function query(filterBy = { txt: '', minPrice: 0, maxPrice: Infinity, dest
             ]
         }
 
+        // ✅ Property Type Filtering (Any type / Room / Entire home)
+        if (filterBy.propertyType && filterBy.propertyType !== 'Any type' && filterBy.propertyType !== '') {
+            if (filterBy.propertyType === 'Room') {
+                criteria.type = { $regex: /room/i }
+            } else if (filterBy.propertyType === 'Entire home') {
+                criteria.type = { $regex: /entire/i }
+            }
+        }
+
+        // ✅ Amenities Filtering (stay must include ALL selected amenities)
+        let amenitiesList = filterBy.amenities
+        if (typeof amenitiesList === 'string') {
+            amenitiesList = amenitiesList.split(',').filter(Boolean)
+        }
+        if (Array.isArray(amenitiesList) && amenitiesList.length > 0) {
+            criteria.amenities = { $all: amenitiesList.map(a => new RegExp(a, 'i')) }
+        }
+
+        // ✅ Bedrooms Filtering
+        const minBedrooms = Number(filterBy.minBedrooms)
+        if (minBedrooms > 0) criteria.bedrooms = { $gte: minBedrooms }
+
+        // ✅ Beds Filtering (capacity)
+        const minBeds = Number(filterBy.minBeds)
+        if (minBeds > 0) criteria.capacity = { $gte: minBeds }
+
+        // ✅ Bathrooms Filtering
+        const minBathrooms = Number(filterBy.minBathrooms)
+        if (minBathrooms > 0) criteria.bathrooms = { $gte: minBathrooms }
+
         console.log('📝 Final MongoDB Query:', criteria) // ✅ Debugging
 
         const stays = await collection.find(criteria).toArray()
