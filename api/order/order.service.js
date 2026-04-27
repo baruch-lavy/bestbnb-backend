@@ -39,7 +39,7 @@ async function getById(orderId) {
 }
 
 async function getOrdersByUser(userId) {
-    console.log('🔍 Checking userId:', userId) // Debugging log
+    // console.log('🔍 Checking userId:', userId) // Debugging log
 
     if (!ObjectId.isValid(userId)) throw new Error(`Invalid ObjectId: ${userId}`)
 
@@ -65,10 +65,10 @@ export async function getOrdersByHost(hostId) {
 
         const objectId = new ObjectId(hostId)
 
-        console.log(`🔍 Querying orders where hostId._id =`, objectId)
+        // console.log(`🔍 Querying orders where hostId._id =`, objectId)
 
         const collection = await dbService.getCollection('order')
-        console.log(`🔍 Collection found:`, collection.collectionName)
+        // console.log(`🔍 Collection found:`, collection.collectionName)
 
         // ✅ Fix the query to match `hostId._id`
         const orders = await collection.find({ "hostId._id": hostId }).toArray()

@@ -20,7 +20,7 @@ export const stayService = {
 // ✅ FETCH STAYS WITH FILTERING & PAGINATION
 async function query(filterBy = { txt: '', minPrice: 0, maxPrice: Infinity, destination: '', guests: 1, startDate: null, endDate: null, category: null }) {
     try {
-        console.log('🔍 Raw filterBy:', filterBy) // ✅ Debugging
+        // console.log('🔍 Raw filterBy:', filterBy) // ✅ Debugging
         
         const collection = await dbService.getCollection('stay')
 
